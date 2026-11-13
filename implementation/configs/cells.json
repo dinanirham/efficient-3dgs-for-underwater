@@ -1,0 +1,242 @@
+{
+  "_about": [
+    "The 2^3 ablation matrix (CD-1).  Selected with `--cell A4`.",
+    "",
+    "Values here are folded into the argument parser's DEFAULTS, so anything",
+    "passed explicitly on the command line still overrides them.  Resolution",
+    "order, weakest to strongest:  code defaults < this file < command line.",
+    "",
+    "`defaults` applies to every cell.  Three of its entries exist because the",
+    "upstream defaults would silently produce a different experiment:",
+    "  do_seathru        upstream False -> the medium model never activates and",
+    "                    every cell would be a study of plain 3DGS.",
+    "  seathru_from_iter upstream 9_000_000, i.e. past the end of training --",
+    "                    the same 'defaults disable the method' trap.",
+    "  eval              upstream False -> empty test set, trains on everything,",
+    "                    reports inflated numbers, raises no error.",
+    "",
+    "Mechanism-specific keys (the primitive budget, codebook size, re-warm-up",
+    "length, ...) are added to this file as each mechanism lands, so that the",
+    "cell definition and the manifest always describe the same run."
+  ],
+  "_n_bud_note": [
+    "n_bud (the M2 primitive budget) is deliberately NOT set here.",
+    "It must be derived from A0's converged primitive count, which no",
+    "publication of the baseline reports, so it is not knowable until A0 has",
+    "run.  Pass it on the command line for every m2 cell:  --n_bud <count>.",
+    "Preflight refuses to start an m2 run without it, because a budget that",
+    "does not bind makes A4 equivalent to A1 and A7 to A5 -- and a null",
+    "interaction measured in that state is a configuration artifact."
+  ],
+  "defaults": {
+    "iterations": 30000,
+    "eval": true,
+    "do_seathru": true,
+    "seathru_from_iter": 10000,
+    "diag_interval": 500,
+    "simp_iteration1": 15000,
+    "simp_iteration2": 20000,
+    "imp_metric": "outdoor",
+    "cdf_thres": 0.99,
+    "m2_rewarm_steps": 200,
+    "m2_lr_rewind": false,
+    "kmeans_st_iter": 22000,
+    "kmeans_k": 4096,
+    "kmeans_freq": 100,
+    "kmeans_iters": 1,
+    "_storage_note": [
+      "The inherited save schedule writes the model at 4 iterations and a",
+      "checkpoint at 4 more. At ~1M primitives that is roughly 900 MB per run,",
+      "or ~86 GB across 96 runs -- more than a normal Drive holds.",
+      "",
+      "Checkpoints in particular have NO operational value here: interrupted",
+      "runs are restarted rather than resumed (CD-18), because the checkpoint",
+      "omits the medium model, the codebooks and the loop's schedule flags.",
+      "Writing 4 per run to support a resume path that is deliberately unused",
+      "is pure cost.",
+      "",
+      "Keeping only the final model brings a run to roughly 60-120 MB and the",
+      "campaign to ~6-12 GB. Everything the analysis needs -- diagnostics,",
+      "eval_metrics, the compressed artifact, run_config -- is unaffected."
+    ],
+    "save_iterations": [
+      30000
+    ],
+    "checkpoint_iterations": [
+      30000
+    ],
+    "_test_iterations_note": [
+      "Upstream evaluates every 1000 iterations -- 30 full evaluations per run,",
+      "each rendering every train and test view and running VGG-LPIPS over",
+      "them. That is real wall-clock inside the figure this study reports as",
+      "training time. Four checkpoints are enough to see the trajectory, and",
+      "the final evaluation is what the results use.",
+      "",
+      "What matters most is that this is identical across cells: an evaluation",
+      "schedule that varied between them would put a confound straight into",
+      "the timing contrast."
+    ],
+    "test_iterations": [
+      7000,
+      15000,
+      22000,
+      30000
+    ],
+    "n_bud": 200000,
+    "_n_bud_note": [
+      "The M2 budget. Set BEFORE S1, from a stated rule, not fitted to A0's",
+      "result afterwards:",
+      "",
+      "  n_bud must lie below the smallest primitive count any other enabled",
+      "  mechanism produces.",
+      "",
+      "M1 disables densification, so under M1 the count is fixed by the dense",
+      "cloud and can never grow. A budget above it is provably inert -- A4 would",
+      "be an exact duplicate of A1, A7 of A5, and the interaction they exist to",
+      "measure would read as a null result rather than as a missing cell.",
+      "",
+      "Measured clouds, `dense` preset, 20000 matches per reference view.",
+      "REGENERATED after CD-26 added the parallax filter, which rejected 24% of",
+      "all triangulations; the pre-filter figures were 299,368 - 471,531:",
+      "  Panama                    244,197   <- still the binding scene",
+      "  IUI3-RedSea               288,609",
+      "  Curasao                   292,707",
+      "  JapaneseGradens-RedSea    293,642",
+      "",
+      "200,000 is now 81.9% of the binding cloud, not the 67% recorded before",
+      "the filter. It still clears preflight's 90% warning, but the margin is",
+      "tighter: M2 removes 18.1% of the M1 population on Panama rather than 33%.",
+      "That is the lever the A4 and A7 interactions have to work with, and it is",
+      "smaller than it was. Filtering also made the clouds more uniform, a 1.58x",
+      "spread across scenes before against 1.20x after.",
+      "",
+      "An earlier value of 400,000 was derived from an estimate of 600-800k",
+      "points, which was 3x high: the cloud is refs x matches_per_ref, and",
+      "nns_per_ref selects which neighbours to match against rather than",
+      "multiplying the count. Preflight caught it before any run consumed it."
+    ]
+  },
+  "cells": {
+    "SS": {
+      "description": "Reference control. Vanilla SeaSplat, run from the upstream checkout, NOT from this codebase -- A0 is already the faithful reimplementation, so an 'SS' cell here would be A0 under another name. Read only as A0 - SS; never differenced with the factorial cells.",
+      "external": {
+        "repo": "dxyang/seasplat @ ddc6259",
+        "why": [
+          "Every result in this study is a difference against A0, so A0's",
+          "equivalence to the method it reimplements is load-bearing for all",
+          "108 runs. That equivalence currently rests on",
+          "tools/replicate_baseline.py: converged primitive count only, at",
+          "16,000 iterations, on Curasao alone, 3 runs per side. It does not",
+          "measure PSNR, SSIM or LPIPS, and it does not reach 30,000",
+          "iterations.",
+          "",
+          "This cell replaces that with the campaign protocol: 4 scenes, 3",
+          "seeds, 30,000 iterations, the full metric set, the same evaluation",
+          "and timing harness. The claim it supports is then the claim the",
+          "thesis actually makes.",
+          "",
+          "s0/s1/s2 are REPEAT INDICES here, not matched seeds. Vanilla accepts",
+          "--seed but seeds only the CPU generator, so its GPU draws vary anyway;",
+          "this implementation seeds both and still measures 49% spread, because",
+          "the rasterizer backward accumulates atomically. Neither side is",
+          "reproducible at a fixed seed, so SS and A0 are compared as scene means",
+          "over repeats -- never run against run, which would look paired and",
+          "carry the pairing noise as though it were signal."
+        ]
+      },
+      "set": {},
+      "equivalence_margin": {
+        "_about": [
+          "Fixed BEFORE S0 runs. An equivalence claim needs a margin stated in",
+          "advance; absence of a detected difference afterwards cannot license",
+          "the word 'equivalent', least of all on a high-variance outcome.",
+          "",
+          "Set to what this design can certify, not to what would be impressive.",
+          "At n=3 per side the PSNR difference resolves to +/-0.36-1.14 dB, so",
+          "+/-1.0 dB is certifiable on three of four scenes.",
+          "",
+          "The count margin is deliberately loose, and that looseness IS the",
+          "finding: with a per-scene CV of 6.0-29.3%, n=3 bounds the ratio only",
+          "to +/-9.6% (JapaneseGardens) through +/-46.9% (Panama). A tighter",
+          "count equivalence is not available at this sample size."
+        ],
+        "psnr_pooled_db": 1.0,
+        "lpips": 0.02,
+        "n_primitives_fraction": 0.3
+      }
+    },
+    "A0": {
+      "description": "Baseline. SeaSplat unmodified. Reference for every contrast, and the run that supplies the primitive budget the other cells need.",
+      "set": {
+        "m1_dense_init": false,
+        "m2_simplify": false,
+        "m3_quantize": false
+      }
+    },
+    "A1": {
+      "description": "M1 only. Dense correspondence initialization; densification disabled, alpha-pruning and opacity reset retained (R-4).",
+      "set": {
+        "m1_dense_init": true,
+        "m2_simplify": false,
+        "m3_quantize": false
+      }
+    },
+    "A2": {
+      "description": "M2 only. Importance-weighted stochastic simplification to the primitive budget, with the medium re-identification burst (CD-6). Carries the study's central hypothesis.",
+      "set": {
+        "m1_dense_init": false,
+        "m2_simplify": true,
+        "m3_quantize": false
+      }
+    },
+    "A3": {
+      "description": "M3 only. Quantization-aware VQ over three codebooks. Expected to show ~no frame-rate gain, because CompGS-VQ's opacity regulariser is disabled (CD-8).",
+      "set": {
+        "m1_dense_init": false,
+        "m2_simplify": false,
+        "m3_quantize": true
+      }
+    },
+    "A4": {
+      "description": "M1+M2. Degeneracy risk: if M1 converges below the budget the prune is a no-op and A4 collapses onto A1. Whether the budget bound is reported per run (G-2).",
+      "set": {
+        "m1_dense_init": true,
+        "m2_simplify": true,
+        "m3_quantize": false
+      }
+    },
+    "A5": {
+      "description": "M1+M3. The least-coupled pair: no shared pipeline stage, and quantization touches neither position nor opacity. Predicted additive.",
+      "set": {
+        "m1_dense_init": true,
+        "m2_simplify": false,
+        "m3_quantize": true
+      }
+    },
+    "A6": {
+      "description": "M2+M3. The one interaction with external theory behind it: a sparser primitive set is predicted to be more sensitive to lossy attribute compression. Informative in both directions.",
+      "set": {
+        "m1_dense_init": false,
+        "m2_simplify": true,
+        "m3_quantize": true
+      }
+    },
+    "A7": {
+      "description": "Fully stacked. Source of the effect-from-above contrasts; inherits every integration decision and both degeneracy risks.",
+      "set": {
+        "m1_dense_init": true,
+        "m2_simplify": true,
+        "m3_quantize": true
+      }
+    },
+    "A0D": {
+      "description": "A0 + D, the supplementary contrast. Alpha-loss gradients detached from density control. Not a corner of the 2^3 -- read only against A0, never differenced with the factorial cells.",
+      "set": {
+        "m1_dense_init": false,
+        "m2_simplify": false,
+        "m3_quantize": false,
+        "detach_alpha_gradient": true
+      }
+    }
+  }
+}

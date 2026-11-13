@@ -1,0 +1,15 @@
+# Install CUDA-enabled PyTorch and matching torchvision separately.
+setuptools
+wheel
+ninja
+numpy
+Pillow
+matplotlib
+scipy
+tqdm
+tensorboard
+jaxtyping
+kornia
+plyfile
+splines
+scikit-learn
