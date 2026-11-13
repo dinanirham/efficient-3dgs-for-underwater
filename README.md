@@ -1,8 +1,13 @@
 # An Efficient 3D Gaussian Splatting for Underwater 3D Reconstruction
 
-**Muhammad Irham Dinan · BINUS University**
+**Muhammad Irham Dinan · BINUS University**  
+**Thesis Supervisor:** I Gede Putra Kusuma Negara, B.Eng., PhD
 
-Research implementation for efficient novel-view synthesis in static underwater scenes. The code adapts SeaSplat to reduce the number of stored Gaussians and the storage required for selected attributes. The study evaluates how these changes affect stored model size and agreement with held-out underwater images.
+## Abstract
+
+Underwater novel-view synthesis requires modeling attenuation and backscatter while managing the storage and computational costs of the scene representation. This study adapted dense correspondence initialization, importance-based population simplification, and attribute vector quantization to SeaSplat to determine how these mechanisms, individually and in combination, affect resource use and image fidelity. The September 2026 evaluation used an eight-configuration factorial design on four static SeaThru-NeRF scenes, with three reported training repeats per configuration and scene, an internal baseline, and a separately trained upstream SeaSplat reference. The evaluation measured final Gaussian count and stored model size and assessed agreement with captured underwater images from held-out viewpoints using peak signal-to-noise ratio, structural similarity, and learned perceptual image patch similarity (LPIPS). The configuration combining all three mechanisms produced mean stored models of 2.42–2.68 MiB, or 0.96–2.03% of the corresponding upstream SeaSplat model sizes, while mean LPIPS was higher in all four scenes, including Japanese Gardens, where peak signal-to-noise ratio and structural similarity improved. Combining dense initialization and population simplification retained 8.36–14.34 times as many Gaussians as predicted by multiplying their standalone count ratios relative to the internal baseline, although the observed counts remained below that baseline. The findings establish substantial storage savings at the tested settings, with fidelity trade-offs that depend on the scene and metric, while fidelity after reloading the compressed models and full underwater rendering throughput remain unverified.
+
+**Keywords:** 3D Gaussian splatting; underwater 3D reconstruction; SeaThru-NeRF; model compression; novel-view synthesis.
 
 ## Method
 
@@ -28,9 +33,13 @@ python -m tools.verify_rasterizer
 
 The setup script builds the bundled rasterizer and nearest-neighbor extensions against the active PyTorch environment. The default architecture targets the A100. If you use another GPU, set `TORCH_CUDA_ARCH_LIST` for that device and record the hardware change. For M1, setup installs RoMa. Set `ROMA_INSTALL_SPEC` to a commit-qualified Git URL if you need to hold its version fixed. RoMa and LPIPS may download weights at first use.
 
+## Dataset
+
+Download the [SeaThru-NeRF dataset](https://drive.google.com/uc?export=download&id=1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT) from the [official SeaThru-NeRF project page](https://sea-thru-nerf.github.io/) (Levy et al., CVPR 2023). Extract the archive outside this repository and set `RAW_ROOT` to the directory containing the scene folders.
+
 ## Data preparation
 
-Obtain the images and COLMAP reconstructions from [SeaThru-NeRF](https://sea-thru-nerf.github.io/). The experimental scene directory keys are `Curasao`, `IUI3-RedSea`, `JapaneseGradens-RedSea`, and `Panama`. Keep the literal keys when running the configured campaign. Each prepared scene needs undistorted images and the corresponding `sparse/0` camera model.
+The experimental scene directory keys are `Curasao`, `IUI3-RedSea`, `JapaneseGradens-RedSea`, and `Panama`. Keep the literal keys when running the configured campaign. Each prepared scene needs undistorted images and the corresponding `sparse/0` camera model.
 
 Example for Curaçao, run from `implementation/`. Set the three paths to locations on your machine before running:
 
